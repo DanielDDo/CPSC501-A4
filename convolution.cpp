@@ -23,7 +23,7 @@ struct WAV{
   vector<unsigned char> buffer4(4);
   vector<unsigned char> buffer2(2);
 
-void parseFile(char *fileName, struct WAV *infoHolder) {
+void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> &data, int &numSamples) {
   ifstream file;
   file.open(fileName, ios::out | ios::binary);
 
@@ -84,19 +84,48 @@ void parseFile(char *fileName, struct WAV *infoHolder) {
     // Read subChunk2Size - little endian
     file.read((char*) &buffer4[0], buffer4.size());
     infoHolder->subChunk2Size = (buffer4[0] << 0) | (buffer4[1] << 8) | (buffer4[2] << 16) | (buffer4[3] << 24);
+
+    // Calculate the number of samples
+    numSamples = (int)(infoHolder->subChunk2Size/(infoHolder->numChannels * (infoHolder->bitsPerSample/8)));
+    signed short int a;
+    // fill data array with wav file's data
+    for (int i = 0; i < numSamples; i++) {
+      file.read((char*) &buffer2[0], buffer2.size());
+      a = buffer2[0] | buffer2[1] << 8; // data is in little endian
+      data.push_back(a);
+    }
   }
   file.close();
+}
+
+void normalize(vector<signed short int> &data , vector<double> &output, int numSamples) {
+  for (int i = 0; i < numSamples; i++) {
+    output.push_back((double)data[i] / 32767.0);
+  }
 }
 
 
 int main(int argc, char *argv[]) {
   struct WAV wav;
   struct WAV ir;
+
+  int numOutputSamples;
+  int numDataSamples;
+  int numIRSamples;
+
+  vector<signed short int> wavData;
+  vector<signed short int> irData;
+
+  vector<double> x;
+  vector<double> h;
+  vector<double> y;
+
   // open a file
-  parseFile(argv[1], &wav);
+  parseFile(argv[1], &wav, wavData, numDataSamples);
+  parseFile(argv[2], &ir, irData, numIRSamples);
 
-  parseFile(argv[2], &ir);
-
+  normalize(wavData, x, numDataSamples);
+  normalize(irData, h, numIRSamples);
 
   return 0;
 }
