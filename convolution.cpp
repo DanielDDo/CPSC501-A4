@@ -104,6 +104,19 @@ void normalize(vector<signed short int> &data , vector<double> &output, int numS
   }
 }
 
+void convolve(vector<double> &x, int N, vector<double> &h, int M, vector<double> &y, int P) {
+  int n, m;
+
+  for (n = 0; n < P; n++) {
+    y[n] = 0.0;
+  }
+
+  for (n = 0; n < N; n++) {
+    for (m = 0; m < M; m++) {
+      y[n+m] = x[n] * h[m];
+    }
+  }
+}
 
 int main(int argc, char *argv[]) {
   struct WAV wav;
@@ -118,7 +131,6 @@ int main(int argc, char *argv[]) {
 
   vector<double> x;
   vector<double> h;
-  vector<double> y;
 
   // open a file
   parseFile(argv[1], &wav, wavData, numDataSamples);
@@ -126,6 +138,12 @@ int main(int argc, char *argv[]) {
 
   normalize(wavData, x, numDataSamples);
   normalize(irData, h, numIRSamples);
+
+  numOutputSamples = numDataSamples + numIRSamples - 1;
+  vector<double> y(numOutputSamples);
+
+  convolve(x, numDataSamples, h, numIRSamples, y, numOutputSamples);
+
 
   return 0;
 }
