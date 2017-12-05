@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <bitset>
 using namespace std;
 
 struct WAV{
@@ -23,6 +24,30 @@ struct WAV{
   vector<unsigned char> buffer4(4);
   vector<unsigned char> buffer2(2);
 
+// convert big-endian to little-endian and vice versa.
+unsigned int swapEndian(vector<unsigned char> &buffer) {
+    unsigned int a = 0;
+    int max = buffer.size();
+    for (int i = 0; i < max; i++) {
+      a |= buffer[i] << (i*8);
+    }
+    return a;
+}
+
+// Convert integers to a char array. swap endianness as well
+void itoa(unsigned int i, unsigned char* a) {
+  if (sizeof(a)/2 == 4) {
+    a[0] = i & 0xff;
+    a[1] = (i >> 8) & 0xff;
+    a[2] = (i >> 16) & 0xff;
+    a[3] = (i >> 24) & 0xff;
+  } else {
+    a[0] = i & 0xff;
+    a[1] = (i >> 8) & 0xff;
+  }
+}
+
+// Parses Input files
 void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> &data, int &numSamples) {
   ifstream file;
   file.open(fileName, ios::out | ios::binary);
@@ -34,7 +59,7 @@ void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> 
 
     // Read chunkSize - little endian
     file.read((char*) &buffer4[0], buffer4.size());
-    infoHolder->chunkSize = (buffer4[0] << 0) | (buffer4[1] << 8) | (buffer4[2] << 16) | (buffer4[3] << 24);
+    infoHolder->chunkSize = swapEndian(buffer4);
 
     // Read format - big endian
     file.read((char*) &buffer4[0], buffer4.size());
@@ -46,35 +71,35 @@ void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> 
 
     // Read subChunk1Size - little endian
     file.read((char*) &buffer4[0], buffer4.size());
-    infoHolder->subChunk1Size = (buffer4[0] << 0) | (buffer4[1] << 8) | (buffer4[2] << 16) | (buffer4[3] << 24);
+    infoHolder->subChunk1Size = swapEndian(buffer4);
 
     // Read audioFormat - little endian
     file.read((char*) &buffer2[0], buffer2.size());
-    infoHolder->audioFormat = (buffer2[0] << 0) | (buffer2[1] << 8);
+    infoHolder->audioFormat = swapEndian(buffer2);
 
     // Read numChannels - little endian
     file.read((char*) &buffer2[0], buffer2.size());
-    infoHolder->numChannels = (buffer2[0] << 0) | (buffer2[1] << 8);
+    infoHolder->numChannels = swapEndian(buffer2);
 
     // Read sampleRate - little endian
     file.read((char*) &buffer4[0], buffer4.size());
-    infoHolder->sampleRate = (buffer4[0] << 0) | (buffer4[1] << 8) | (buffer4[2] << 16) | (buffer4[3] << 24);
+    infoHolder->sampleRate = swapEndian(buffer4);
 
     // Read byteRate - little endian
     file.read((char*) &buffer4[0], buffer4.size());
-    infoHolder->byteRate = (buffer4[0] << 0) | (buffer4[1] << 8) | (buffer4[2] << 16) | (buffer4[3] << 24);
+    infoHolder->byteRate = swapEndian(buffer4);
 
     // Read blockAlign - little endian
     file.read((char*) &buffer2[0], buffer2.size());
-    infoHolder->blockAlign = (buffer2[0] << 0) | (buffer2[1] << 8);
+    infoHolder->blockAlign = swapEndian(buffer2);
 
     // Read bitsPerSample - little endian
     file.read((char*) &buffer2[0], buffer2.size());
-    infoHolder->bitsPerSample = (buffer2[0] << 0) | (buffer2[1] << 8);
+    infoHolder->bitsPerSample = swapEndian(buffer2);
 
     // discard extra bits if they're present
     if (infoHolder->subChunk1Size > 16) {
-      file.read((char*) &buffer4[0], infoHolder->subChunk1Size-16);
+      file.read((char*) &buffer2[0], infoHolder->subChunk1Size-16);
     }
 
     // Read subChunk2ID - big endian
@@ -83,7 +108,7 @@ void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> 
 
     // Read subChunk2Size - little endian
     file.read((char*) &buffer4[0], buffer4.size());
-    infoHolder->subChunk2Size = (buffer4[0] << 0) | (buffer4[1] << 8) | (buffer4[2] << 16) | (buffer4[3] << 24);
+    infoHolder->subChunk2Size = swapEndian(buffer4);
 
     // Calculate the number of samples
     numSamples = (int)(infoHolder->subChunk2Size/(infoHolder->numChannels * (infoHolder->bitsPerSample/8)));
@@ -98,9 +123,87 @@ void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> 
   file.close();
 }
 
-void normalize(vector<signed short int> &data , vector<double> &output, int numSamples) {
+// Create a new WAV file.
+void writeWAV(char *outputFile, const vector<signed short int> &data, struct WAV &infoHolder) {
+  ofstream file(outputFile, ios::out | ios::binary);
+  unsigned char a4[4];
+  unsigned char a2[2];
+
+  if (file.is_open()) {
+    // Write chunkID - big-endian
+    file.write(infoHolder.chunkID, sizeof(infoHolder.chunkID));
+
+    // Write chunkSize - little-endian
+    itoa(infoHolder.chunkSize, a4);
+    file.write((char*) &a4, sizeof(a4));
+
+    // Write format - big-endian
+    file.write(infoHolder.format, sizeof(infoHolder.format));
+
+    // Write subChunk1ID - big-endian
+    file.write(infoHolder.subChunk1ID, sizeof(infoHolder.subChunk1ID));
+
+    // Write subChunk1Size - little-endian
+    itoa(infoHolder.subChunk1Size, a4);
+    file.write((char*) &a4, sizeof(a4));
+
+    // Write audioFormat - litten-endian
+    itoa(infoHolder.audioFormat, a2);
+    file.write((char*) &a2, sizeof(a2));
+
+    // Write numChannels - little-endian
+    itoa(infoHolder.numChannels, a2);
+    file.write((char*) &a2, sizeof(a2));
+
+    // Write sampleRate - little-endian
+    itoa(infoHolder.sampleRate, a4);
+    file.write((char*) &a4, sizeof(a4));
+
+    // Write byteRate - little-endian
+    itoa(infoHolder.byteRate, a4);
+    file.write((char*) &a4, sizeof(a4));
+
+    // Write blockAlign - little-endian
+    itoa(infoHolder.blockAlign, a2);
+    file.write((char*) &a2, sizeof(a2));
+
+    // Write bitsPerSample - little-endian
+    itoa(infoHolder.bitsPerSample, a2);
+    file.write((char*) &a2, sizeof(a2));
+
+    // Write extra bits to account for file size
+    if (infoHolder.subChunk1Size > 16) {
+      a2[0] = 0;
+      a2[1] = 0;
+      file.write((char*) &a2, sizeof(a2));
+    }
+
+    // Write subChunk2ID - big endian
+    file.write(infoHolder.subChunk2ID, sizeof(infoHolder.subChunk2ID));
+
+    // Write subChunk2Size - little-endian
+    itoa(infoHolder.subChunk2Size, a4);
+    file.write((char*) &a4, sizeof(a4));
+
+    int i, max;
+    max = data.size();
+    for (i = 0; i < max; i++) {
+      itoa(data[i], a2);
+      file.write((char*) &a2, sizeof(a2));
+    }
+  }
+  file.close();
+}
+
+void normalize(vector<signed short int> &data, vector<double> &output, int numSamples) {
   for (int i = 0; i < numSamples; i++) {
     output.push_back((double)data[i] / 32767.0);
+  }
+}
+
+void denormalize(vector<double> &input, vector<signed short int> &output, int length) {
+  for (int i = 0; i < length; i++) {
+    output[i] = 0.80 * (input[i] * 32767);
   }
 }
 
@@ -110,19 +213,26 @@ void convolve(vector<double> &x, int N, vector<double> &h, int M, vector<double>
   for (n = 0; n < P; n++) {
     y[n] = 0.0;
   }
-
+// n*M + m
   for (n = 0; n < N; n++) {
     for (m = 0; m < M; m++) {
-      y[n+m] = x[n] * h[m];
+      y[n+m] += x[n] * h[m];
     }
   }
+  cout << endl;
 }
 
 int main(int argc, char *argv[]) {
+  if (argc != 4) {
+    cout << "ERROR: Missing argument" << endl;
+    cout << "input: Sound file, Impulse Response file, Output file name";
+    exit(1);
+  }
+
   struct WAV wav;
   struct WAV ir;
 
-  int numOutputSamples;
+  //int numOutputSamples;
   int numDataSamples;
   int numIRSamples;
 
@@ -139,11 +249,25 @@ int main(int argc, char *argv[]) {
   normalize(wavData, x, numDataSamples);
   normalize(irData, h, numIRSamples);
 
-  numOutputSamples = numDataSamples + numIRSamples - 1;
+  int numOutputSamples = numDataSamples + numIRSamples - 1;
   vector<double> y(numOutputSamples);
+  vector<signed short int> convolvedData(numOutputSamples);
+
+  cout << numDataSamples << endl;
+  cout << numIRSamples << endl;
+  cout << numOutputSamples << endl;
 
   convolve(x, numDataSamples, h, numIRSamples, y, numOutputSamples);
 
+  denormalize(y, convolvedData, numDataSamples);
+
+  for (int i = 0; i < numOutputSamples; i++) {
+    if (convolvedData[i] > 32767 || convolvedData[i] < -32767) {
+      cout << convolvedData[i] << " " << i << " is out of range. Down scale it" << endl;
+    }
+  }
+
+  writeWAV(argv[3], convolvedData, wav);
 
   return 0;
 }
