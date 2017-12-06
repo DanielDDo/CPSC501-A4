@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include <bitset>
+#include <
 using namespace std;
 
 struct WAV{
@@ -203,7 +203,32 @@ void normalize(vector<signed short int> &data, vector<double> &output, int numSa
 
 void denormalize(vector<double> &input, vector<signed short int> &output, int length) {
   for (int i = 0; i < length; i++) {
-    output[i] = 0.80 * (input[i] * 32767);
+    output[i] = input[i] * 32767;
+  }
+}
+
+void scaleDown(vector<double> &data) {
+  double max, min, scale;
+  max = -2.01;
+  min = 2.01;
+  int i, num;
+  num = data.size();
+  for (i = 0; i < num; i++) {
+    if (data[i] > max) {
+      max = data[i];
+    }
+    if (data[i] < min) {
+      min = data[i];
+    }
+  }
+  if (max > fabs(min)) {
+    scale = 1.0/max;
+  } else {
+    scale = 1.0/fabs(min);
+  }
+
+  for (i = 0; i < num; i++) {
+    data[i] *= scale;
   }
 }
 
@@ -259,13 +284,9 @@ int main(int argc, char *argv[]) {
 
   convolve(x, numDataSamples, h, numIRSamples, y, numOutputSamples);
 
-  denormalize(y, convolvedData, numDataSamples);
+  scaleDown(y);
 
-  for (int i = 0; i < numOutputSamples; i++) {
-    if (convolvedData[i] > 32767 || convolvedData[i] < -32767) {
-      cout << convolvedData[i] << " " << i << " is out of range. Down scale it" << endl;
-    }
-  }
+  denormalize(y, convolvedData, numOutputSamples);
 
   writeWAV(argv[3], convolvedData, wav);
 
