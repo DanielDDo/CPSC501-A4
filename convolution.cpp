@@ -124,7 +124,7 @@ void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> 
 }
 
 // Create a new WAV file.
-void writeWAV(char *outputFile, const vector<signed short int> &data, struct WAV &infoHolder) {
+void writeWAV(char *outputFile, const vector<signed short int> &data, struct WAV &infoHolder, int subchunk2Size) {
   ofstream file(outputFile, ios::out | ios::binary);
   unsigned char a4[4];
   unsigned char a2[2];
@@ -286,7 +286,9 @@ int main(int argc, char *argv[]) {
 
   denormalize(y, convolvedData, numOutputSamples);
 
-  writeWAV(argv[3], convolvedData, wav);
+  // calculate the subchunk2Size for he output wav file
+  int newSubChunk2Size = (numOutputSamples * wav.numChannels * (wav.bitsPerSample/8));
+  writeWAV(argv[3], convolvedData, wav, newSubChunk2Size);
 
   return 0;
 }
