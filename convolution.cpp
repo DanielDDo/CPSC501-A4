@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
-#include <
+#include <cmath>
 using namespace std;
 
 struct WAV{
@@ -209,9 +209,9 @@ void denormalize(vector<double> &input, vector<signed short int> &output, int le
 
 void scaleDown(vector<double> &data) {
   double max, min, scale;
+  int i, num;
   max = -2.01;
   min = 2.01;
-  int i, num;
   num = data.size();
   for (i = 0; i < num; i++) {
     if (data[i] > max) {
@@ -238,13 +238,11 @@ void convolve(vector<double> &x, int N, vector<double> &h, int M, vector<double>
   for (n = 0; n < P; n++) {
     y[n] = 0.0;
   }
-// n*M + m
   for (n = 0; n < N; n++) {
     for (m = 0; m < M; m++) {
       y[n+m] += x[n] * h[m];
     }
   }
-  cout << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -277,10 +275,6 @@ int main(int argc, char *argv[]) {
   int numOutputSamples = numDataSamples + numIRSamples - 1;
   vector<double> y(numOutputSamples);
   vector<signed short int> convolvedData(numOutputSamples);
-
-  cout << numDataSamples << endl;
-  cout << numIRSamples << endl;
-  cout << numOutputSamples << endl;
 
   convolve(x, numDataSamples, h, numIRSamples, y, numOutputSamples);
 
