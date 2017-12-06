@@ -213,6 +213,7 @@ void scaleDown(vector<double> &data) {
   max = -2.01;
   min = 2.01;
   num = data.size();
+  // find the max/min data points
   for (i = 0; i < num; i++) {
     if (data[i] > max) {
       max = data[i];
@@ -221,12 +222,15 @@ void scaleDown(vector<double> &data) {
       min = data[i];
     }
   }
+
+  // find the higher value of the 2. and create a multiply-able scale with it
   if (max > fabs(min)) {
     scale = 1.0/max;
   } else {
     scale = 1.0/fabs(min);
   }
 
+  // Scale all the data points so all points are within the range 1.0 to -1.0
   for (i = 0; i < num; i++) {
     data[i] *= scale;
   }
@@ -248,7 +252,7 @@ void convolve(vector<double> &x, int N, vector<double> &h, int M, vector<double>
 int main(int argc, char *argv[]) {
   if (argc != 4) {
     cout << "ERROR: Missing argument" << endl;
-    cout << "input: Sound file, Impulse Response file, Output file name";
+    cout << "input: Sound file, Impulse Response file, Output file name" << endl;;
     exit(1);
   }
 
