@@ -124,7 +124,7 @@ void parseFile(char *fileName, struct WAV *infoHolder, vector<signed short int> 
 }
 
 // Create a new WAV file.
-void writeWAV(char *outputFile, const vector<signed short int> &data, struct WAV &infoHolder, int subchunk2Size) {
+void writeWAV(char *outputFile, const vector<signed short int> &data, struct WAV &infoHolder, int subChunk2Size) {
   ofstream file(outputFile, ios::out | ios::binary);
   unsigned char a4[4];
   unsigned char a2[2];
@@ -182,12 +182,11 @@ void writeWAV(char *outputFile, const vector<signed short int> &data, struct WAV
     file.write(infoHolder.subChunk2ID, sizeof(infoHolder.subChunk2ID));
 
     // Write subChunk2Size - little-endian
-    itoa(infoHolder.subChunk2Size, a4);
+    itoa(subChunk2Size, a4);
     file.write((char*) &a4, sizeof(a4));
 
-    int i, max;
-    max = data.size();
-    for (i = 0; i < max; i++) {
+    int i;
+    for (i = 0; i < data.size(); i++) {
       itoa(data[i], a2);
       file.write((char*) &a2, sizeof(a2));
     }
@@ -242,7 +241,9 @@ void convolve(vector<double> &x, int N, vector<double> &h, int M, vector<double>
   for (n = 0; n < P; n++) {
     y[n] = 0.0;
   }
+  printf("0        / %d", N);
   for (n = 0; n < N; n++) {
+    printf("%d \r", n);
     for (m = 0; m < M; m++) {
       y[n+m] += x[n] * h[m];
     }
@@ -288,6 +289,7 @@ int main(int argc, char *argv[]) {
 
   // calculate the subchunk2Size for he output wav file
   int newSubChunk2Size = (numOutputSamples * wav.numChannels * (wav.bitsPerSample/8));
+  cout << newSubChunk2Size << endl;
   writeWAV(argv[3], convolvedData, wav, newSubChunk2Size);
 
   return 0;
