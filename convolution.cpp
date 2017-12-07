@@ -185,8 +185,9 @@ void writeWAV(char *outputFile, const vector<signed short int> &data, struct WAV
     itoa(subChunk2Size, a4);
     file.write((char*) &a4, sizeof(a4));
 
-    int i;
-    for (i = 0; i < data.size(); i++) {
+    int i, size;
+    size = data.size();
+    for (i = 0; i < size; i++) {
       itoa(data[i], a2);
       file.write((char*) &a2, sizeof(a2));
     }
@@ -237,15 +238,18 @@ void scaleDown(vector<double> &data) {
 
 void convolve(vector<double> &x, int N, vector<double> &h, int M, vector<double> &y, int P) {
   int n, m;
+  double xval;
 
   for (n = 0; n < P; n++) {
     y[n] = 0.0;
   }
-  printf("0        / %d", N);
   for (n = 0; n < N; n++) {
-    printf("%d \r", n);
+    if (n%(N/100) == 0) {  // progress indicator
+      cout << "\r" << (int)((n/N) * 100) << "%%";
+    }
+    xval = x[n];
     for (m = 0; m < M; m++) {
-      y[n+m] += x[n] * h[m];
+      y[n+m] += xval * h[m];
     }
   }
 }
@@ -287,9 +291,9 @@ int main(int argc, char *argv[]) {
 
   denormalize(y, convolvedData, numOutputSamples);
 
-  // calculate the subchunk2Size for he output wav file
+  // calculate the subchunk2Size for the output wav file
   int newSubChunk2Size = (numOutputSamples * wav.numChannels * (wav.bitsPerSample/8));
-  cout << newSubChunk2Size << endl;
+
   writeWAV(argv[3], convolvedData, wav, newSubChunk2Size);
 
   return 0;
