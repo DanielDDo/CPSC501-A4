@@ -263,7 +263,7 @@ struct WAV{
   void combineRealAndImaginary(vector<double> &x, vector<double> &x2, vector<double> &h, vector<double> &h2) {
     // Find the nearest 2 power.
     int temp = (int) ceil(log2(x.size()));
-    int newSize = 2 << temp;
+    int newSize = 1 << temp;
 
     while((int)x.size() < newSize) {
       x.push_back(0.0);
