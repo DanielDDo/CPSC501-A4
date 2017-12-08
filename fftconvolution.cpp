@@ -353,13 +353,7 @@ int main(int argc, char* argv[]) {
 
   int outputSize = x.size() + h.size() - 1;
 
-  cout << x.size() << endl;
-  cout << h.size() << endl;
-  cout << outputSize << endl;
-
   combineRealAndImaginary(x, X, h, H);
-
-
 
   fft(X, (X.size()-1)/2, 1);
   fft(H, (H.size()-1)/2, 1);
