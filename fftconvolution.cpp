@@ -200,8 +200,13 @@ struct WAV{
   }
 
   void normalize(vector<signed short int> &data, vector<double> &output, int numSamples) {
-    for (int i = 0; i < numSamples; i++) {
+    int i;
+    for (i = 0; i < numSamples-1; i += 2) {
       output.push_back((double)data[i] / 32767.0);
+      output.push_back((double)data[i+1] / 32767.0);
+    }
+    if (i == numSamples-1) {
+      output.push_back((double)data[i-1] / 32767.0);
     }
   }
 
